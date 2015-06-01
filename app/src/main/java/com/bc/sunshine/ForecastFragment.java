@@ -1,9 +1,11 @@
 package com.bc.sunshine;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.text.format.Time;
 import android.util.Log;
@@ -29,7 +31,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -48,20 +49,17 @@ public class ForecastFragment extends Fragment {
     }
 
     @Override
+    public void onStart() {
+        super.onStart();
+        updateWeather();
+    }
+
+    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
-        String [] forecastArray = {
-                "Today - Sunny - 88 / 63",
-                "Tomorrow - Foggy - 70 / 46",
-                "Weds - Cloudy - 72 / 63",
-                "Thurs - Rainy - 64 / 51",
-                "Fri - Foggy - 70 / 46",
-                "Sat - Sunny - 76 / 68"
-        };
-
-        List<String> weekForecast = new ArrayList<String>(Arrays.asList(forecastArray));
+        List<String> weekForecast = new ArrayList<String>();
 
          mForecastAdapter = new ArrayAdapter<String>(
                  getActivity(),
@@ -89,13 +87,20 @@ public class ForecastFragment extends Fragment {
         inflater.inflate(R.menu.forecastfragment, menu);
     }
 
+    private void updateWeather(){
+        FetchWeatherTask weatherTask = new FetchWeatherTask();
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        String location = preferences.getString(getString(R.string.pref_location_key),getString(R.string.pref_location_default));
+        String metric = preferences.getString(getString(R.string.pref_metric_key),getString(R.string.pref_metric_default));
+        weatherTask.execute(location, metric);
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
 
         int id = item.getItemId();
         if (id == R.id.action_refresh){
-            FetchWeatherTask weatherTask = new FetchWeatherTask();
-            weatherTask.execute("3115,AU");
+            updateWeather();
             return true;
         }
 
@@ -107,14 +112,17 @@ public class ForecastFragment extends Fragment {
 
     public class FetchWeatherTask extends AsyncTask <String, Void, String[]> {
         private final String LOG_TAG = FetchWeatherTask.class.getSimpleName();
+        private String mMetric;
 
         @Override
         protected String[] doInBackground(String... params) {
             // These two need to be declared outside the try/catch
             // so that they can be closed in the finally block.
-            if(params.length == 0){
+            if(params.length == 0 || params.length == 1){
                 return null;
             }
+
+            mMetric = params[1];
 
             HttpURLConnection urlConnection = null;
             BufferedReader reader = null;
@@ -284,6 +292,11 @@ public class ForecastFragment extends Fragment {
                 JSONObject temperatureObject = dayForecast.getJSONObject(OWM_TEMPERATURE);
                 double high = temperatureObject.getDouble(OWM_MAX);
                 double low = temperatureObject.getDouble(OWM_MIN);
+
+                if(mMetric.equals(getString(R.string.pref_metric_fahrenheit))){
+                    high = (high * 1.8) + 32;
+                    low = (low * 1.8) + 32;
+                }
 
                 highAndLow = formatHighLows(high, low);
                 resultStrs[i] = day + " - " + description + " - " + highAndLow;
