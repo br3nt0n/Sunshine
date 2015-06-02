@@ -16,4 +16,8 @@
     <string name="pref_metric_default" translatable="false">Celcius</string>
     <string name="pref_metric_celcius">Celcius</string>
     <string name="pref_metric_fahrenheit">Fahrenheit</string>
+
+    <string name="view_location_label">View location</string>
+    <string name="error_maps">You have no mapping apps installed!</string>
+    <string name="share_title">Share</string>
 </resources>

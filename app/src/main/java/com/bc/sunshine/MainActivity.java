@@ -1,10 +1,13 @@
 package com.bc.sunshine;
 
 import android.content.Intent;
-import android.support.v7.app.AppCompatActivity;
+import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
+import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -34,8 +37,30 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(this, SettingsActivity.class);
             startActivity(intent);
             return true;
+        } else if (id == R.id.action_location) {
+            openPreferredLocationInMap();
+            return true;
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void openPreferredLocationInMap(){
+        String userLocation = PreferenceManager.getDefaultSharedPreferences(this)
+                .getString(getString(R.string.pref_location_key), getString(R.string.pref_location_default));
+        Uri location = Uri.parse("geo:0,0?").buildUpon()
+                .appendQueryParameter("q",userLocation)
+                .build();
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setData(location);
+        //Check if user has any mapping apps installed
+        if (intent.resolveActivity(getPackageManager()) != null){
+            startActivity(intent);
+        } else {
+            CharSequence errorMsg = getString(R.string.error_maps);
+            int duration = Toast.LENGTH_SHORT;
+            Toast toast = Toast.makeText(this, errorMsg, duration);
+            toast.show();
+        }
     }
 }
